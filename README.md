@@ -1,220 +1,293 @@
-# Smart Travel Currency Forecaster - Backend Setup Guide
+# Currency Exchange Backend Proxy Server
 
-## 🚀 Quick Start
+A robust Node.js proxy server that provides currency exchange rates with caching, fallback mechanisms, and multiple data sources. This server acts as a reliable intermediary between your applications and external currency exchange APIs.
 
-### 1. Setup Backend Server
+## 🚀 Features
 
-**Install Node.js** (if you haven't already):
+- **Real-time Exchange Rates**: Get current exchange rates between any supported currency pairs
+- **Multiple Data Sources**: Primary integration with `exchangerate.host` and fallback to `exchangerate-api.com`
+- **Smart Caching**: 1-hour cache duration to reduce API calls and improve response times
+- **Error Handling**: Comprehensive error handling with graceful fallbacks
+- **CORS Enabled**: Ready for cross-origin requests from web applications
+- **Health Monitoring**: Built-in health check endpoint
+- **Mock Data Support**: Fallback mock rates for development and testing
 
-- Download from [nodejs.org](https://nodejs.org/)
-- Verify installation: `node --version` and `npm --version`
+## 📋 Prerequisites
 
-**Create project directory:**
+- Node.js (v14 or higher)
+- npm or yarn package manager
+
+## 🛠️ Installation
+
+1. **Clone or download the project files**
+
+2. **Install dependencies**:
+
+   ```bash
+   npm install express cors axios dotenv
+   ```
+
+3. **Create environment file** (optional):
+
+   ```bash
+   touch .env
+   ```
+
+   Add any custom configuration:
+
+   ```
+   PORT=3000
+   NODE_ENV=development
+   ```
+
+4. **Start the server**:
+   ```bash
+   node server.js
+   ```
+
+The server will start on port 3000 by default (or the port specified in your environment variables).
+
+## 📡 API Endpoints
+
+### Get Current Exchange Rate
+
+```
+GET /api/rates/current/:from/:to
+```
+
+**Parameters:**
+
+- `from`: Base currency code (e.g., USD, EUR, GBP)
+- `to`: Target currency code
+
+**Example:**
 
 ```bash
-mkdir currency-forecaster-backend
-cd currency-forecaster-backend
-```
-
-**Save the files:**
-
-- Copy `server.js` content to `server.js`
-- Copy `package.json` content to `package.json`
-
-**Install dependencies:**
-
-```bash
-npm install
-```
-
-**Start the server:**
-
-```bash
-npm start
-```
-
-You should see:
-
-```
-🚀 Currency Exchange Proxy Server running on port 3000
-📊 API Endpoints:
-   GET /api/rates/current/:from/:to
-   GET /api/rates/historical/:from/:to/:days
-   GET /api/currencies
-   GET /health
-```
-
-### 2. Setup Frontend
-
-**Save the frontend HTML:**
-
-- Save the "Currency Forecaster - Frontend with Backend Integration" as `index.html`
-
-**Open in browser:**
-
-- Open `index.html` in your web browser
-- You should see "🟢 Real-time data available" in the header
-
-### 3. Test the System
-
-**Test individual endpoints:**
-
-```bash
-# Current rate
 curl http://localhost:3000/api/rates/current/USD/EUR
-
-# Historical rates
-curl http://localhost:3000/api/rates/historical/USD/EUR/30
-
-# Health check
-curl http://localhost:3000/health
 ```
-
-**Test in browser:**
-
-1. Select currencies (e.g., USD to EUR)
-2. Set amount (e.g., 1000)
-3. Set travel date (30+ days out)
-4. Click "Analyze Exchange Strategy"
-
-## 🔧 Configuration Options
-
-### Backend Configuration
-
-**Change port (server.js):**
-
-```javascript
-const PORT = process.env.PORT || 3001; // Change to 3001
-```
-
-**Frontend configuration (index.html):**
-
-```javascript
-const BACKEND_URL = "http://localhost:3001"; // Match backend port
-```
-
-### Production Deployment
-
-**For production, you'll need:**
-
-1. Deploy backend to a cloud service (Heroku, Railway, Vercel, etc.)
-2. Update `BACKEND_URL` in frontend to your deployed backend URL
-3. Enable HTTPS for secure API calls
-
-## 📊 API Endpoints
-
-### GET `/api/rates/current/:from/:to`
-
-Get current exchange rate between two currencies.
-
-**Example:** `GET /api/rates/current/USD/EUR`
 
 **Response:**
 
 ```json
 {
-  "rate": 0.8543,
-  "date": "2025-06-12",
+  "rate": 0.8234,
+  "date": "2025-06-13",
   "base": "USD",
-  "target": "EUR"
+  "target": "EUR",
+  "source": "exchangerate.host"
 }
 ```
 
-### GET `/api/rates/historical/:from/:to/:days`
+### Get Supported Currencies
 
-Get historical exchange rates for specified number of days.
+```
+GET /api/currencies
+```
 
-**Example:** `GET /api/rates/historical/USD/EUR/30`
+**Example:**
+
+```bash
+curl http://localhost:3000/api/currencies
+```
 
 **Response:**
 
 ```json
 {
-  "from": "USD",
-  "to": "EUR",
-  "data": [
-    { "date": "2025-05-13", "rate": 0.8521 },
-    { "date": "2025-05-14", "rate": 0.8534 }
-  ],
-  "dataPoints": 31,
-  "isMockData": false
+  "currencies": ["USD", "EUR", "GBP", "JPY", "..."],
+  "count": 168,
+  "source": "exchangerate.host"
 }
 ```
 
-### GET `/health`
+### Health Check
 
-Check if server is running.
+```
+GET /health
+```
 
 **Response:**
 
 ```json
 {
   "status": "healthy",
-  "timestamp": "2025-06-12T10:30:00.000Z",
+  "timestamp": "2025-06-13T10:30:00.000Z",
   "cacheSize": 5
 }
 ```
 
-## 🐛 Troubleshooting
+## 🏗️ Architecture
 
-### Server won't start
+### Data Sources
 
-- Check if port 3000 is already in use: `lsof -i :3000`
-- Try a different port or kill the process
+1. **Primary**: `exchangerate.host` - More reliable with better historical data
+2. **Fallback**: `exchangerate-api.com` - Backup when primary source fails
+3. **Mock Data**: Hardcoded rates for development/testing scenarios
 
-### Frontend shows "offline"
+### Caching Strategy
 
-- Verify backend is running on correct port
-- Check browser console for CORS or network errors
-- Ensure `BACKEND_URL` matches your backend address
+- **Duration**: 1 hour per cached entry
+- **Storage**: In-memory Map structure
+- **Keys**: Generated based on request parameters
+- **Benefits**: Reduces API calls and improves response times
 
-### API calls failing
+### Error Handling
 
-- Check internet connection
-- ExchangeRate-API might be rate-limited (normal behavior)
-- Server will fall back to mock data automatically
+- Graceful fallback between data sources
+- Comprehensive error logging
+- User-friendly error messages
+- Development vs production error details
 
-### Historical data shows as "simulated"
+## 🔧 Configuration
 
-- This is normal - ExchangeRate-API historical endpoint often has issues
-- The app will show clear indicators when using real vs mock data
-- Current rates should still be real-time
+### Environment Variables
 
-## ⚡ Features
+- `PORT`: Server port (default: 3000)
+- `NODE_ENV`: Environment mode (development/production)
 
-### Real-time Status
+### Cache Configuration
 
-- Green indicator: Real API data available
-- Red indicator: Using fallback mock data
-- Auto-reconnection every 30 seconds
+Modify cache duration in the code:
 
-### Smart Caching
-
-- 1-hour cache for API responses
-- Reduces API calls and improves performance
-- Automatic cache management
-
-### Intelligent Fallbacks
-
-- Graceful degradation when APIs fail
-- Clear indicators of data source quality
-- Realistic mock data generation
-
-## 🔄 Development Mode
-
-**For development with auto-restart:**
-
-```bash
-npm install -g nodemon
-npm run dev
+```javascript
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour in milliseconds
 ```
 
-This will restart the server automatically when you make changes to `server.js`.
+### API URLs
 
-## 📈 Next Steps
+Update API endpoints if needed:
 
-1. **Add more currency pairs** - ExchangeRate-API supports 160+ currencies
-2. **Implement user preferences** - Save favorite currency pairs
-3. **Add email alerts** - Notify when rates hit target levels
-4. **Historical charts** - More detailed time period analysis
-5. **Mobile app** - React Native or Progressive Web App
+```javascript
+const EXCHANGERATE_API_URL = "https://api.exchangerate-api.com/v4";
+const EXCHANGERATE_HOST_URL = "https://api.exchangerate.host";
+```
+
+## 🚦 Usage Examples
+
+### JavaScript/Node.js
+
+```javascript
+const axios = require("axios");
+
+// Get current USD to EUR rate
+async function getCurrentRate() {
+  try {
+    const response = await axios.get(
+      "http://localhost:3000/api/rates/current/USD/EUR"
+    );
+    console.log(`Current rate: ${response.data.rate}`);
+  } catch (error) {
+    console.error("Error:", error.response.data);
+  }
+}
+```
+
+### Python
+
+```python
+import requests
+
+# Get supported currencies
+response = requests.get('http://localhost:3000/api/currencies')
+currencies = response.json()['currencies']
+print(f"Supported currencies: {len(currencies)}")
+```
+
+### cURL
+
+```bash
+# Get GBP to USD rate
+curl -X GET http://localhost:3000/api/rates/current/GBP/USD
+
+# Check server health
+curl -X GET http://localhost:3000/health
+```
+
+## 🔍 Monitoring and Debugging
+
+### Logging
+
+The server provides console logging for:
+
+- API requests and responses
+- Cache hits and misses
+- Error conditions and fallbacks
+- Server startup information
+
+### Health Monitoring
+
+Use the `/health` endpoint to monitor:
+
+- Server status
+- Current timestamp
+- Cache size
+
+## 🛡️ Error Handling
+
+The server handles various error scenarios:
+
+- **API Unavailability**: Automatic fallback to secondary data source
+- **Network Issues**: Graceful error responses with details
+- **Invalid Currency Codes**: 404 responses for unsupported pairs
+- **Rate Limiting**: Caching reduces API call frequency
+
+## 📦 Dependencies
+
+- **express**: Web framework for Node.js
+- **cors**: Cross-Origin Resource Sharing middleware
+- **axios**: HTTP client for API requests
+- **dotenv**: Environment variable loader
+
+## 🚀 Deployment
+
+### Local Development
+
+```bash
+npm start
+# or
+node server.js
+```
+
+### Production Deployment
+
+1. Set `NODE_ENV=production`
+2. Configure appropriate `PORT` for your hosting platform
+3. Ensure all dependencies are installed
+4. Consider using a process manager like PM2
+
+### Docker (Optional)
+
+```dockerfile
+FROM node:16-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is open source. Please check the license file for details.
+
+## 🆘 Support
+
+For issues and questions:
+
+1. Check the logs for error details
+2. Verify API endpoint availability
+3. Test with the `/health` endpoint
+4. Review cache behavior if rates seem stale
+
+---
+
+**Happy coding! 💱**
