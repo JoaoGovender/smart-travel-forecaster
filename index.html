@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Travel Currency Forecaster</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .recommendation-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .recommendation-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .rate-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .rate-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid #4facfe;
+        }
+
+        .rate-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .rate-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            margin: 30px 0;
+            height: 400px;
+            position: relative;
+        }
+
+        .trend-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .trend-card {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .trend-arrow {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .data-info {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        .data-info.mock {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .news-section {
+            background: #fafbfc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .news-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .news-summary {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .form-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💱 Smart Travel Currency Forecaster</h1>
+            <p>Get intelligent recommendations on when to convert your money for travel</p>
+            <div id="serverStatus" class="status-indicator status-offline">
+                🔴 Checking server connection...
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2 style="margin-bottom: 25px; color: #333;">Plan Your Currency Exchange</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fromCurrency">From Currency</label>
+                        <select id="fromCurrency">
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="CHF">CHF - Swiss Franc</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                            <option value="ZAR">ZAR - South African Rand</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="toCurrency">To Currency</label>
+                        <select id="toCurrency">
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="CHF">CHF - Swiss Franc</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                            <option value="ZAR">ZAR - South African Rand</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount to Convert</label>
+                        <input type="number" id="amount" value="1000" min="1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="travelDate">Travel Date</label>
+                        <input type="date" id="travelDate">
+                    </div>
+                </div>
+                <button class="analyze-btn" onclick="analyzeRates()">
+                    🔍 Analyze Exchange Strategy
+                </button>
+            </div>
+
+            <div id="loadingSection" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing currency trends and market conditions...</p>
+            </div>
+
+            <div id="resultsSection" class="results-section">
+                <div class="recommendation-card">
+                    <h3>💡 Smart Exchange Recommendation</h3>
+                    <div id="recommendationText"></div>
+                </div>
+
+                <div id="dataInfo" class="data-info" style="display: none;">
+                    <!-- Data source information will be displayed here -->
+                </div>
+
+                <div class="rate-display">
+                    <div class="rate-card">
+                        <div class="rate-value" id="currentRate">-</div>
+                        <div class="rate-label">Current Rate</div>
+                    </div>
+                    <div class="rate-card">
+                        <div class="rate-value" id="avgRate">-</div>
+                        <div class="rate-label">30-Day Average</div>
+                    </div>
+                    <div class="rate-card">
+                        <div class="rate-value" id="convertedAmount">-</div>
+                        <div class="rate-label">You'll Receive</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="rateChart"></canvas>
+                </div>
+
+                <div class="trend-indicators" id="trendIndicators">
+                    <!-- Trend indicators will be populated by JavaScript -->
+                </div>
+
+                <div class="news-section">
+                    <h3 style="margin-bottom: 15px; color: #333;">📈 Market Insights</h3>
+                    <div id="marketNews">
+                        <!-- Market insights will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const BACKEND_URL = 'http://localhost:3000'; // Change this to your backend URL
+        
+        // Initialize the application
+        let rateChart = null;
+        let historicalData = [];
+        let serverOnline = false;
+
+        // Set default travel date to 30 days from now
+        const travelDateInput = document.getElementById('travelDate');
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 30);
+        travelDateInput.value = defaultDate.toISOString().split('T')[0];
+        travelDateInput.min = new Date().toISOString().split('T')[0];
+
+        // Check server status on page load
+        checkServerStatus();
+
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    serverOnline = true;
+                    updateServerStatus(true);
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                serverOnline = false;
+                updateServerStatus(false);
+                console.warn('Backend server not available:', error.message);
+            }
+        }
+
+        function updateServerStatus(online) {
+            const statusElement = document.getElementById('serverStatus');
+            if (online) {
+                statusElement.className = 'status-indicator status-online';
+                statusElement.textContent = '🟢 Real-time data available';
+            } else {
+                statusElement.className = 'status-indicator status-offline';
+                statusElement.textContent = '🔴 Using fallback data (start backend server)';
+            }
+        }
+
+        async function getCurrentRate(fromCurrency, toCurrency) {
+            if (serverOnline) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/rates/current/${fromCurrency}/${toCurrency}`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            rate: data.rate,
+                            date: data.date,
+                            base: data.base,
+                            isRealData: true
+                        };
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Backend current rate failed:', error);
+                    serverOnline = false;
+                    updateServerStatus(false);
+                }
+            }
+            
+            // Fallback to mock data
+            return { 
+                rate: getMockRate(fromCurrency, toCurrency), 
+                date: new Date().toISOString().split('T')[0],
+                isRealData: false
+            };
+        }
+
+        async function getHistoricalRates(fromCurrency, toCurrency, days = 30) {
+            if (serverOnline) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/rates/historical/${fromCurrency}/${toCurrency}/${days}`);
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        return {
+                            data: result.data,
+                            isRealData: !result.isMockData,
+                            dataPoints: result.dataPoints,
+                            message: result.message || `Retrieved ${result.dataPoints} real data points`
+                        };
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Backend historical rates failed:', error);
+                    serverOnline = false;
+                    updateServerStatus(false);
+                }
+            }
+            
+            // Fallback: Generate mock data
+            const currentRate = await getCurrentRate(fromCurrency, toCurrency);
+            return {
+                data: generateRealisticHistoricalData(currentRate.rate, days),
+                isRealData: false,
+                dataPoints: days + 1,
+                message: 'Using generated sample data (backend server offline)'
+            };
+        }
+
+        function getMockRate(from, to) {
+            const rates = {
+                'USD-EUR': 0.85, 'USD-GBP': 0.75, 'USD-JPY': 110, 'USD-AUD': 1.35,
+                'USD-CAD': 1.25, 'USD-CHF': 0.92, 'USD-CNY': 6.45, 'USD-ZAR': 15.2,
+                'EUR-USD': 1.18, 'EUR-GBP': 0.88, 'GBP-USD': 1.33, 'GBP-EUR': 1.14
+            };
+            
+            const key = `${from}-${to}`;
+            return rates[key] || (1 / (rates[`${to}-${from}`] || 1));
+        }
+
+        function generateRealisticHistoricalData(currentRate, days) {
+            const data = [];
+            
+            for (let i = days; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                
+                // Create more realistic variations that can show real trends
+                const baseVolatility = 0.02; // 2% daily volatility
+                const trendFactor = Math.sin(i / 8) * 0.08; // 8% trend variation over time
+                const randomFactor = (Math.random() - 0.5) * baseVolatility;
+                
+                // Add some market "events" that cause bigger moves
+                let eventFactor = 0;
+                if (i === 25 || i === 18 || i === 10 || i === 5) {
+                    eventFactor = (Math.random() - 0.5) * 0.06; // 6% event moves
+                }
+                
+                const rate = currentRate * (1 + trendFactor + randomFactor + eventFactor);
+                
+                data.push({
+                    date: date.toISOString().split('T')[0],
+                    rate: parseFloat(rate.toFixed(4))
+                });
+            }
+            
+            return data;
+        }
+
+        function calculateTrend(data) {
+            if (data.length < 2) return 'stable';
+            
+            const recent = data.slice(-7); // Last 7 days
+            const older = data.slice(-14, -7); // Previous 7 days
+            
+            const recentAvg = recent.reduce((sum, d) => sum + d.rate, 0) / recent.length;
+            const olderAvg = older.reduce((sum, d) => sum + d.rate, 0) / older.length;
+            
+            const change = (recentAvg - olderAvg) / olderAvg;
+            
+            if (change > 0.005) return 'up';
+            if (change < -0.005) return 'down';
+            return 'stable';
+        }
+
+        function generateRecommendation(data, travelDate, fromCurrency, toCurrency) {
+            const currentRate = data[data.length - 1].rate;
+            const avgRate = data.reduce((sum, d) => sum + d.rate, 0) / data.length;
+            const trend = calculateTrend(data);
+            const daysUntilTravel = Math.ceil((new Date(travelDate) - new Date()) / (1000 * 60 * 60 * 24));
+            
+            let recommendation = '';
+            let timing = '';
+            
+            if (currentRate > avgRate * 1.02) {
+                // Current rate is significantly above average
+                timing = 'CONVERT NOW';
+                recommendation = `Great timing! The current rate is ${((currentRate / avgRate - 1) * 100).toFixed(1)}% above the 30-day average. This is an excellent opportunity to convert your ${fromCurrency} to ${toCurrency}.`;
+            } else if (currentRate < avgRate * 0.98) {
+                // Current rate is significantly below average
+                if (daysUntilTravel > 14) {
+                    timing = 'WAIT';
+                    recommendation = `Consider waiting. The current rate is ${((1 - currentRate / avgRate) * 100).toFixed(1)}% below the 30-day average. With ${daysUntilTravel} days until travel, you might get a better rate.`;
+                } else {
+                    timing = 'CONVERT SOON';
+                    recommendation = `Convert within the next week. While rates are below average, your travel date is approaching and currency markets can be unpredictable.`;
+                }
+            } else {
+                // Rate is near average
+                if (trend === 'up') {
+                    timing = 'CONVERT NOW';
+                    recommendation = `Good time to convert. Rates are trending upward and near the monthly average. Converting now secures a reasonable rate.`;
+                } else if (trend === 'down') {
+                    timing = daysUntilTravel > 7 ? 'WAIT A FEW DAYS' : 'CONVERT SOON';
+                    recommendation = `Rates are trending downward. ${daysUntilTravel > 7 ? 'Monitor for a few more days for potential better rates.' : 'Convert soon as your travel date approaches.'}`;
+                } else {
+                    timing = 'CONVERT ANYTIME';
+                    recommendation = `Rates are stable and fair. You can convert anytime in the next week without significant impact.`;
+                }
+            }
+            
+            return { recommendation, timing, currentRate, avgRate, trend };
+        }
+
+        function generateMockFinancialNews(fromCurrency, toCurrency) {
+            const newsTemplates = [
+                {
+                    title: `${fromCurrency}/${toCurrency} Market Analysis`,
+                    summary: `Recent economic indicators suggest continued volatility in the ${fromCurrency}-${toCurrency} pair. Central bank policies remain a key driver.`
+                },
+                {
+                    title: 'Global Currency Market Update',
+                    summary: `Forex markets showing mixed signals as investors weigh economic data. The ${fromCurrency} maintains relative strength against major currencies.`
+                },
+                {
+                    title: `${toCurrency} Economic Outlook`,
+                    summary: `Latest economic reports indicate stable growth prospects for ${toCurrency}, supporting current exchange rate levels.`
+                }
+            ];
+            
+            return newsTemplates;
+        }
+
+        async function analyzeRates() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const travelDate = document.getElementById('travelDate').value;
+            
+            if (!amount || !travelDate) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            try {
+                // Fetch data from backend or fallback
+                console.log('Fetching current exchange rate...');
+                const currentRateData = await getCurrentRate(fromCurrency, toCurrency);
+                
+                console.log('Fetching historical exchange rates...');
+                const historicalResult = await getHistoricalRates(fromCurrency, toCurrency, 30);
+                historicalData = historicalResult.data;
+                
+                // Generate market insights
+                const newsData = generateMockFinancialNews(fromCurrency, toCurrency);
+                
+                // Analyze the data
+                const analysis = generateRecommendation(historicalData, travelDate, fromCurrency, toCurrency);
+                
+                // Update UI with data
+                updateResults(analysis, amount, toCurrency, newsData);
+                updateDataInfo(currentRateData.isRealData, historicalResult);
+                updateChart(historicalData, fromCurrency, toCurrency);
+                updateTrendIndicators(analysis.trend, fromCurrency, toCurrency);
+                
+                // Hide loading and show results
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('resultsSection').style.display = 'block';
+                
+                console.log('Analysis complete!');
+                
+            } catch (error) {
+                console.error('Error analyzing rates:', error);
+                document.getElementById('loadingSection').style.display = 'none';
+                alert('Error analyzing rates. Please try again.');
+            }
+        }
+
+        function updateResults(analysis, amount, toCurrency, newsData) {
+            document.getElementById('recommendationText').innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-weight: bold; margin-right: 15px;">
+                        ${analysis.timing}
+                    </span>
+                </div>
+                <p style="font-size: 1.1rem; line-height: 1.6;">${analysis.recommendation}</p>
+            `;
+            
+            document.getElementById('currentRate').textContent = analysis.currentRate.toFixed(4);
+            document.getElementById('avgRate').textContent = analysis.avgRate.toFixed(4);
+            document.getElementById('convertedAmount').textContent = `${(amount * analysis.currentRate).toLocaleString()} ${toCurrency}`;
+            
+            // Update market news
+            const newsContainer = document.getElementById('marketNews');
+            newsContainer.innerHTML = newsData.map(item => `
+                <div class="news-item">
+                    <div class="news-title">${item.title}</div>
+                    <div class="news-summary">${item.summary}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateDataInfo(isCurrentReal, historicalResult) {
+            const dataInfoElement = document.getElementById('dataInfo');
+            const isHistoricalReal = historicalResult.isRealData;
+            
+            let message = '';
+            let className = 'data-info';
+            
+            if (isCurrentReal && isHistoricalReal) {
+                message = `✅ Using real-time data: Current rates and ${historicalResult.dataPoints} historical data points from ExchangeRate-API`;
+                className += '';
+            } else if (isCurrentReal && !isHistoricalReal) {
+                message = `⚠️ Mixed data: Real current rates, but historical data is simulated. ${historicalResult.message}`;
+                className += ' mock';
+            } else {
+                message = `⚠️ Using simulated data: ${historicalResult.message}. Start the backend server for real-time rates.`;
+                className += ' mock';
+            }
+            
+            dataInfoElement.className = className;
+            dataInfoElement.innerHTML = message;
+            dataInfoElement.style.display = 'block';
+        }
+
+        function updateChart(data, fromCurrency, toCurrency) {
+            const ctx = document.getElementById('rateChart').getContext('2d');
+            
+            if (rateChart) {
+                rateChart.destroy();
+            }
+            
+            rateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                    datasets: [{
+                        label: `${fromCurrency}/${toCurrency}`,
+                        data: data.map(d => d.rate),
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#4facfe',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTrendIndicators(trend, fromCurrency, toCurrency) {
+            const container = document.getElementById('trendIndicators');
+            const trendData = [
+                {
+                    label: '7-Day Trend',
+                    value: trend,
+                    arrow: trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️'
+                },
+                {
+                    label: 'Volatility',
+                    value: 'Moderate',
+                    arrow: '📊'
+                },
+                {
+                    label: 'Market Sentiment',
+                    value: trend === 'up' ? 'Bullish' : trend === 'down' ? 'Bearish' : 'Neutral',
+                    arrow: '🎯'
+                },
+                {
+                    label: 'Forecast',
+                    value: trend === 'stable' ? 'Stable' : 'Variable',
+                    arrow: '🔮'
+                }
+            ];
+            
+            container.innerHTML = trendData.map(item => `
+                <div class="trend-card">
+                    <div class="trend-arrow">${item.arrow}</div>
+                    <div style="font-weight: bold; color: #333;">${item.value}</div>
+                    <div style="font-size: 0.8rem; color: #666;">${item.label}</div>
+                </div>
+            `).join('');
+        }
+
+        // Check server status every 30 seconds
+        setInterval(checkServerStatus, 30000);
+    </script>
+</body>
+</html>
